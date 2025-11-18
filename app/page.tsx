@@ -1,23 +1,29 @@
 "use client";
 
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useEffect, Suspense } from 'react';
+import { useSearchParams, useRouter } from 'next/navigation';
 import { SearchBar } from '@/components/SearchBar';
 import { ResultCard } from '@/components/ResultCard';
 import { analyzeOwnership } from '@/services/GeminiService';
 import { SearchState } from '@/types/types';
 
-export default function App() {
+function AppContent() {
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  const query = searchParams.get('q');
+
   const [state, setState] = useState<SearchState>({
     isLoading: false,
     result: null,
     error: null,
   });
 
-  const handleSearch = useCallback(async (query: string) => {
+  // Perform the actual search logic
+  const performSearch = useCallback(async (searchQuery: string) => {
     setState(prev => ({ ...prev, isLoading: true, error: null }));
     
     try {
-      const result = await analyzeOwnership(query);
+      const result = await analyzeOwnership(searchQuery);
       setState({
         isLoading: false,
         result,
@@ -32,13 +38,31 @@ export default function App() {
     }
   }, []);
 
-  const handleReset = () => {
-    setState({
-      isLoading: false,
-      result: null,
-      error: null
-    });
-  };
+  // React to URL changes
+  useEffect(() => {
+    if (query) {
+      performSearch(query);
+    } else {
+      // Reset state if no query (e.g., navigating back to home)
+      setState({
+        isLoading: false,
+        result: null,
+        error: null
+      });
+    }
+  }, [query, performSearch]);
+
+  // Handle user submitting search -> updates URL -> triggers useEffect
+  const handleSearch = useCallback((searchQuery: string) => {
+    const params = new URLSearchParams(searchParams.toString());
+    params.set('q', searchQuery);
+    router.push(`/?${params.toString()}`);
+  }, [router, searchParams]);
+
+  // Handle reset -> updates URL -> triggers useEffect
+  const handleReset = useCallback(() => {
+    router.push('/');
+  }, [router]);
 
   return (
     <div className="min-h-screen w-full bg-[#0f172a] relative overflow-hidden selection:bg-blue-500/30">
@@ -89,5 +113,13 @@ export default function App() {
         <p>Made by Will Jarrared :D</p>
       </footer>
     </div>
+  );
+}
+
+export default function App() {
+  return (
+    <Suspense fallback={<div className="min-h-screen w-full bg-[#0f172a]" />}>
+      <AppContent />
+    </Suspense>
   );
 }
