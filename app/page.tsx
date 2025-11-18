@@ -86,7 +86,7 @@ export default function App() {
       </main>
       
       <footer className="absolute bottom-4 w-full text-center text-slate-600 text-xs">
-        <p>Powered by Gemini 2.5 Flash & Google Search Grounding</p>
+        <p>Made by Will Jarrared :D</p>
       </footer>
     </div>
   );
